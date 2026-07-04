@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-Parses the output of:
-    adb shell content query --uri content://sms/ > sms_backup.txt
-
-and extracts messages for specific senders/contacts into clean JSON files.
-
-Usage:
-    python sms_parser.py sms_backup.txt
-
-Edit CONTACTS below to match the sender names/numbers you want to extract.
-"""
-
 import re
 import json
 import sys
@@ -98,7 +86,7 @@ def main():
         # Sort chronologically just in case the dump wasn't ordered
         messages.sort(key=lambda m: m["date"])
 
-        out_filename = f"sms_backup_{contact}.json"
+        out_filename = f"./data/sms_backwup_{contact}.json"
         with open(out_filename, "w", encoding="utf-8") as out:
             json.dump(messages, out, ensure_ascii=False, indent=2)
 

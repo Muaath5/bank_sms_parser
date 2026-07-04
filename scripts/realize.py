@@ -560,7 +560,7 @@ def main():
         unknown = 0
         cnt = 0
         try:
-            with open(f"./data/sms_backup_{bank}.json", 'r') as f:
+            with open(f"{DATA_FOLDER}/sms_backup_{bank}.json", 'r') as f:
                 msgs = json.load(f)
         except FileNotFoundError:
             print(f"Bank {bank} file doesn't exist (./data/sms_backup_{bank}.json)")
