@@ -100,7 +100,7 @@ def alinma_parse(msg):
             "account": top.split(' ')[5]
         }
 
-    if top == f'هلا {NAME}':
+    if top.startswith('هلا'):
         if lines[1] == 'تم إيداع الراتب':
             labels = construct_labels(lines, [
                 ('بمبلغ: ', "amount"),
@@ -182,6 +182,12 @@ def alinma_parse(msg):
             "at": labels["at"]
         }
     if top.startswith('شراء إنترنت'):
+        labels = construct_labels(lines, [
+            ('في ', "at"),
+            ('بطاقة ', "card"),
+            ('حساب ', "account"),
+            ('من ', "from"),
+        ])
         labels['amount'] = top[12:]
         return {
             "flow": "outgoing",

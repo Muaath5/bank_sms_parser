@@ -86,7 +86,7 @@ def main():
         # Sort chronologically just in case the dump wasn't ordered
         messages.sort(key=lambda m: m["date"])
 
-        out_filename = f"./data/sms_backwup_{contact}.json"
+        out_filename = f"./data/sms_backup_{contact}.json"
         with open(out_filename, "w", encoding="utf-8") as out:
             json.dump(messages, out, ensure_ascii=False, indent=2)
 
