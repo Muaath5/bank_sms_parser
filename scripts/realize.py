@@ -3,6 +3,8 @@ import datetime
 import re
 import hashlib
 
+from exchange_rates import CURRENCY_RATES
+
 NAME='asdf'
 ALRAJHI_ACCOUNT=1234
 
@@ -18,26 +20,12 @@ def get_6char_hex_hash(input_string):
 def extract_number(text: str) -> float:
     try:
         parts = text.strip().split(' ')
-        currency = {
-            'SR': 1,
-            'SAR': 1,
-            'ريال': 1,
-
-
-            'USD': 3.75, # USA
-            'AED': 1,    # UAE
-            'MKD': 0.07, # Macedonia
-            'EGP': 0.13, # Egypt
-            'MDL': 0.21, # Moldova
-            'CNY': 0.55, # China
-        }
-        if parts[0] in currency:
+        if parts[0] in CURRENCY_RATES:
             parts[0], parts[1] = parts[1], parts[0]
         parts[0] = parts[0].replace(',', '')
-        return float(parts[0]) * currency[parts[1]]
-    except:
-        print(f"Invalid extract_number call: {text}")
-        exit(1)
+        return float(parts[0]) * CURRENCY_RATES[parts[1]]
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"Invalid extract_number call: {text}") from error
 
 def realize(bank):
     with open(f"sms_backup_{bank}.json", 'r') as f:
@@ -50,7 +38,6 @@ def realize(bank):
     head = sorted(head)
     for h in head:
         print(h)
-
 def construct_labels(lines, titles):
     labels = {}
     for x, y in titles:
@@ -65,8 +52,7 @@ def construct_labels(lines, titles):
 def alinma_parse(msg):
     lines = msg['text'].split('\n')
     top = lines[0].strip()
-
-    if top.startswith('Please use the activation code') or top.startswith('رمز شراء أونلاين') or 'لا يكفي لإتمام مشترياتك' in top or top == 'لإتمام عملية الشراء عبر الإنترنت' or top.startswith('استخدم رمز التفعيل:') or top.startswith('عميلنا العزيز') or top.startswith('رمز التفعيل:'):
+    if top.startswith('Please use the activation code') or top.startswith('رمز شراء أونلاين') or 'لا يكفي لإتمام مشترياتك' in top or top == 'لإتمام عملية الشراء عبر الإنترنت' or top.startswith('استخدم رمز التفعيل:') or top.startswith('عميلنا العزيز') or top.startswith('عميل الإنماء المالية') or top.startswith('رمز التفعيل:') or top.startswith('تم فتح حسابك الجديد') or top.startswith('حسب طلبك تم تغير الرقم السرى'):
         return None
 
     labels = construct_labels(lines, [
@@ -76,7 +62,6 @@ def alinma_parse(msg):
         ('من: ', "from"),
         ('الى: ', "to")
     ])
-
 
     if top == 'تم إيداع الراتب':
         labels = construct_labels(lines, [
@@ -91,7 +76,6 @@ def alinma_parse(msg):
             "at": labels["at"],
             "account": labels["account"]
         }
-
     if top.startswith('تم قيد مبلغ'):
         return {
             "flow": "ingoing",
@@ -99,7 +83,6 @@ def alinma_parse(msg):
             "amount": float(top.split(' ')[3]),
             "account": top.split(' ')[5]
         }
-
     if top.startswith('هلا'):
         if lines[1] == 'تم إيداع الراتب':
             labels = construct_labels(lines, [
@@ -116,7 +99,6 @@ def alinma_parse(msg):
             }
         else:
             return None
-
     if top == 'شراء (مدى Pay)':
         return {
             "flow": "outgoing",
@@ -243,7 +225,7 @@ def alinma_parse(msg):
                 ('لحساب ', "account"),
                 ('لـ ', "to")
             ])
-        else: 
+        else:
             labels = construct_labels(lines, [
                 ('مبلغ: ', "amount"),
                 ('في: ', "at"),
@@ -260,29 +242,25 @@ def alinma_parse(msg):
             "at": labels["at"]
         }
     return {"type": "unknown"}
-
 def alrajhi_parse(msg):
     lines = msg['text'].split('\n')
     top = lines[0].strip()
-
     if top == 'عزيزي العميل,' or top.startswith('تم تسجيل الدخول إلى حسابك من جهاز جديد') or top.startswith('OTP Code') or top.startswith('تمت اضافة المستفيد') or top.startswith('تم تنشيط المستفيد') or top.startswith('نظرا لعدم وجود رصيد') or top == 'كلمة مرور لمرة واحدة' or top.startswith('كلمة مرور صالحة لمرة واحدة') or top.startswith('رمز مؤقت') or top.startswith('رمز التحقق') or top == 'ننصح بعدم مشاركة الرمز لحمايتك من الاحتيال' or top.startswith('اشعار:'):
         return None
-
     if re.match("Your card [0-9]{4}", top):
         return None
-    
+
     if top == 'يرجى تحديث هويتك لتفادي ايقاف حسابك':
         return None
 
     if 'بإمكانكم تجديد البطاقة من خلال أجهزة الخدمة الذاتية' in top:
         return None
-    
-    if top.startswith("عزيزي") or top.startswith('عميلنا العزيز،'):
+
+    if top.startswith("عزيزي") or top.startswith('عميلنا العزيز') or top.startswith('مرحباً'):
         return None
 
     if top == 'حوالة مالية صادرة مرفوضة':
         return None
-
     labels = construct_labels(lines, {
         ('لدى:', 'for'),
         ('من:', 'from'),
@@ -313,7 +291,7 @@ def alrajhi_parse(msg):
             "card": labels["card"],
             "at": labels["at"]
         }
-    
+
     if top == 'حوالة بين حساباتك':
         return {
             "type": "internal_transaction",
@@ -337,7 +315,7 @@ def alrajhi_parse(msg):
             ('ﺑطﺎﻗة:', 'card'),
             ('ﻓﻲ:', 'at')
         })
-        
+
         return {
             "type": "buy",
             "amount": extract_number(labels["amount"]),
@@ -352,7 +330,7 @@ def alrajhi_parse(msg):
             "amount": extract_number(labels["amount"]),
             "for": labels["for"],
             "card": labels["card"],
-            "at": labels["at"]   
+            "at": labels["at"]
         }
     if top == 'خصم من التفويض عبر الانترنت':
         return {
@@ -361,7 +339,7 @@ def alrajhi_parse(msg):
             "amount": extract_number(labels["amount"]),
             "for": labels["for"],
             "card": labels["card"],
-            "at": labels["at"]   
+            "at": labels["at"]
         }
     if top == 'سحب:صراف آلي':
         return {
@@ -396,6 +374,14 @@ def alrajhi_parse(msg):
             "from": labels["from"],
             "service": labels["service"],
         }
+    if top == 'مدفوعات سوا':
+        return {
+            "flow": "outgoing",
+            "type": "sawa_payment",
+            "amount": extract_number(labels["amount"]),
+            "from": labels["from"],
+            "at": labels["at"],
+        }
     if top == 'شراء دولي':
         return {
             "flow": "outgoing",
@@ -417,7 +403,7 @@ def alrajhi_parse(msg):
         return {
             "flow": "outgoing",
             "type": "buy_internet",
-            "amount": extract_number(labels["amount"]), 
+            "amount": extract_number(labels["amount"]),
             "for": labels["for"],
             "card": labels["card"]
         }
@@ -436,7 +422,6 @@ def alrajhi_parse(msg):
             "for": labels["for"]
         }
     if top == 'حوالة داخلية' or top == 'حوالة محلية':
-
         return {
             "flow": ("outgoing" if labels["from"] == str(ALRAJHI_ACCOUNT) else "ingoing"),
             "type": "transaction",
@@ -552,13 +537,11 @@ def alrajhi_parse(msg):
             "to": labels['to']
         }
     return {"type": "unknown"}
-
 def main():
     banks = {
-        'alinma': alinma_parse, 
+        'alinma': alinma_parse,
         'AlRajhiBank': alrajhi_parse
     }
-
     res = []
     unknown = 0
     cnt = 0
@@ -584,14 +567,15 @@ def main():
                 if record['type'] == 'unknown':
                     unknown += 1
                 cnt += 1
-
                 res.append(record)
 
-        print(f"{bank}: {len(msgs)} total SMS messages, ({cnt - unknown}/{cnt}) = {(cnt - unknown)/cnt*100:.2f}%")
+        percentage = (cnt - unknown) / cnt * 100 if cnt else 100.0
+        print(f"{bank}: {len(msgs)} total SMS messages, ({cnt - unknown}/{cnt}) = {percentage:.2f}%")
     res.sort(key=lambda x: x['sms_date'])
 
     with open(f'{DATA_FOLDER}/{OUTPUT_FILE}', 'w', encoding="utf-8") as f:
         f.write(json.dumps(res, ensure_ascii=False, indent=4))
     print(f"Results saved to {OUTPUT_FILE}")
 
-main()
+if __name__ == "__main__":
+    main()

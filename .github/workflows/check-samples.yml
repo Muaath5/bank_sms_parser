@@ -1,0 +1,18 @@
+name: Check SMS samples
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-samples:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Parse committed samples
+        run: python3 scripts/check_samples.py
