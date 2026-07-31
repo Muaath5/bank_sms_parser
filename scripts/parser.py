@@ -88,7 +88,7 @@ def main():
 
         out_filename = f"./data/sms_backup_{contact}.json"
         with open(out_filename, "w", encoding="utf-8") as out:
-            json.dump(messages, out, ensure_ascii=False, indent=2)
+            json.dump(messages, out, ensure_ascii=False, indent=4)
 
         print(f"{contact}: {len(messages)} messages written to {out_filename}")
 

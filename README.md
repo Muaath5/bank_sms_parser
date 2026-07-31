@@ -6,6 +6,8 @@ A script that fetches all SMS messages from your Android phone and analyzes mess
 - Alrajhi (`AlRajhiBank`)
 - Alinma (`alinma`)
 
+Supported with samples in `samples/` folder
+
 ## Features
 - Pulls an SMS backup from your Android phone
 - Puts your bank contacts messages in JSON format
