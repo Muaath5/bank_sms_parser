@@ -249,7 +249,10 @@ def alrajhi_parse(msg):
         return None
     if re.match("Your card [0-9]{4}", top):
         return None
-
+    if top.startswith("Telecom"):
+        return None
+    if top.startswith("OTP Code:"):
+            return None
     if top == 'يرجى تحديث هويتك لتفادي ايقاف حسابك':
         return None
 
@@ -273,8 +276,9 @@ def alrajhi_parse(msg):
         ('الخدمة:', 'service'),
         ('دولة:', 'country'),
         ('مكان السحب:', 'place'),
+        ('؜', 'at')
     })
-    if top == 'شراء':
+    if top == 'شراء' or top == 'شراء PoS':
         if 'بـ' in msg["text"]:
             labels = construct_labels(lines, {
                 ('لـ', 'for'),
@@ -350,6 +354,21 @@ def alrajhi_parse(msg):
             "card": labels["card"],
             "at": labels["at"]
         }
+    if top.startswith("سحب:صراف آلي ب"):
+        labels = construct_labels(lines, {
+            ('من', 'place'),
+            ('عبر', 'card'),
+            ('؜', 'at')
+        })
+        labels["amount"] = top.split(" ب")[1]
+        return {
+            "flow": "outgoing",
+            "type": "withdrawal",
+            "amount": extract_number(labels["amount"]),
+            "place": labels["place"],
+            "card": labels["card"],
+            "at": labels["at"]
+        }
     if top == 'ايداع شيك ورقي':
         return {
             "flow": "ingoing",
@@ -378,6 +397,14 @@ def alrajhi_parse(msg):
         return {
             "flow": "outgoing",
             "type": "sawa_payment",
+            "amount": extract_number(labels["amount"]),
+            "from": labels["from"],
+            "at": labels["at"],
+        }
+    if top == 'موبايلي-السوق الإلكتروني':
+        return {
+            "flow": "outgoing",
+            "type": "mobily_payment",
             "amount": extract_number(labels["amount"]),
             "from": labels["from"],
             "at": labels["at"],
@@ -429,6 +456,14 @@ def alrajhi_parse(msg):
             "from": labels["from"],
             "to": labels['to']
         }
+    if top == 'حوالة واردة حساب مواطن':
+        return {
+            "flow": "ingoing",
+            "type": "citzen_account",
+            "amount": extract_number(labels['amount']),
+            "to": labels["to"],
+            "at": labels["at"]
+        }
     if top == 'عملية شراء-حساب جاري - المتجر الألكتروني':
         return {
             "flow": "outgoing",
@@ -436,7 +471,7 @@ def alrajhi_parse(msg):
             "amount": extract_number(labels["amount"]),
             "from": labels["from"]
         }
-    if top.startswith('حوالة داخلية واردة بـ'):
+    if top.startswith('حوالة داخلية واردة بـ') or top.startswith('حوالة محلية واردة بـ'):
         labels = construct_labels(lines, {
             ('من', 'from'),
             ('لـ', 'to'),
@@ -445,6 +480,20 @@ def alrajhi_parse(msg):
         labels["amount"] = top.split('بـ')[1]
         return {
             "flow": "ingoing",
+            "type": "transaction",
+            "amount": extract_number(labels["amount"]),
+            "from": labels["from"],
+            "to": labels['to']
+        }
+    if top.startswith('حوالة داخلية صادرة بـ') or top.startswith('حوالة محلية صادرة بـ'):
+        labels = construct_labels(lines, {
+            ('من', 'from'),
+            ('لـ', 'to'),
+            ('بـ', 'amount')
+        })
+        labels["amount"] = top.split('بـ')[1]
+        return {
+            "flow": "outgoing",
             "type": "transaction",
             "amount": extract_number(labels["amount"]),
             "from": labels["from"],

@@ -29,7 +29,7 @@ Template samples are available in the `samples/` folder.
 ```sh
 git clone https://github.com/Muaath5/bank_sms_parser.git
 cd bank_sms_parser
-./script.sh
+./run.sh
 ```
 
 ## Checking SMS Samples
@@ -69,6 +69,8 @@ CLASSES = {
     "net": "Internet",
     "srv": "Services",
     "cld": "Cloud",
+    "phr": "Pharmacy",
+    "hlt": "Health",
     "idk": "Unknown"
 }
 ```

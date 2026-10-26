@@ -18,6 +18,7 @@ CLASSES = {
     "net": "Internet",
     "srv": "Services",
     "cld": "Cloud",
+    "phr": "Pharmacy",
     "idk": "Unknown"
 }
 
